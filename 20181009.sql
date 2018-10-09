@@ -11,10 +11,11 @@ select count(*) from case1.tbl_data;
 select * from case1.tbl_data;
 select * from sys.sys_config;
 
-#tbl_user, nodes
 
+#############数据处理#############################
+
+#1.建立tbl_user表, nodes
 drop table if exists tbl_user;
-
 create table tbl_user
 (
    UserID               int not null auto_increment,
@@ -29,15 +30,27 @@ create table tbl_user
    primary key (UserID)
 );
 
-select * from case1.tbl_user;
-
+#2.tbl_user插入数据
 insert into tbl_user(PhoneNum,PhoneAreaCode,PhoneArea,NumberSource,Sign,IMSI)
 select distinct PhoneNumber,PhoneAreaCode,PhoneArea,CallSource,1,IMSI
 from tbl_data;
 
+#3.tbl_user插入数据
 insert into tbl_user(PhoneNum,PhoneAreaCode,PhoneArea,Sign)
 select distinct OppositePhoneNumber,OppositePhoneAreaCode,OppositePhoneArea,0
 from tbl_data;
+
+
+#4.tbl_user去重
+delete from tbl_user where UserID in (select UserID from (select UserID from tbl_user where PhoneNum in (SELECT PhoneNum FROM tbl_user group by PhoneNum having count(PhoneNum)>1) and UserID not in(select min(UserID) from tbl_user group by PhoneNum having count(PhoneNum)>1)) as tmpresult);
+SET SQL_SAFE_UPDATES = 0;
+
+
+#5.以下查询结果可以作为图的edges
+select distinct (select UserID from tbl_user where PhoneNumber = tbl_user.PhoneNum) as UserID,(select UserID from tbl_user where OppositePhoneNumber = tbl_user.PhoneNum) as OppositeID from tbl_data;
+
+#########################################################
+
 
 #tbl_relation, edges
 drop table if exists tbl_relation;
@@ -61,9 +74,6 @@ create table tbl_relation
 
 select * from tbl_relation;
 select distinct UserID,OppositeID from tbl_relation;
-#!!!!以下查询结果可以作为图的edges 
-select UserID,OppositeID,count(OppositeID) as wight from tbl_relation group by UserID,OppositeID;
-
 
 #insert into tbl_relation(UserID,OppositeID,TalkTime,CallType,CallSign)
 #select PhoneNumber,OppositePhoneNumber,TalkTime,CallType,CallSign from tbl_data;
@@ -72,9 +82,19 @@ insert into tbl_relation(UserID,OppositeID,TalkTime,CallType,CallSign)
 select distinct UserID,PhoneNum from tbl_user inner join tbl_data on tbl_user.PhoneNum = tbl_data.PhoneNumber;
 select PhoneNumber,OppositePhoneNumber,TalkTime,CallType,CallSign from tbl_data;
 
+
+
 #tbl_relation插入数据！！！！
 insert into tbl_relation(UserID,OppositeID,TalkTime,CallType,CallSign)
 select (select UserID from tbl_user where PhoneNumber = tbl_user.PhoneNum) as UserID,(select UserID from tbl_user where OppositePhoneNumber = tbl_user.PhoneNum) as OppositeID,TalkTime,CallType,CallSign from tbl_data;
+
+
+
+
+
+#利用tbl_relation可以加上权重
+select UserID,OppositeID,count(OppositeID) as wight from tbl_relation group by UserID,OppositeID;
+
 
 
 select distinct UserID from tbl_user inner join tbl_data on tbl_user.PhoneNum = tbl_data.OppositePhoneNumber;
@@ -98,9 +118,3 @@ group by PhoneNumber,OppositePhoneNumber;
 
 select * from tbl_relation2;
 
-
-#tbl_user去重
-
-delete from tbl_user where UserID in (select UserID from (select UserID from tbl_user where PhoneNum in (SELECT PhoneNum FROM tbl_user group by PhoneNum having count(PhoneNum)>1) and UserID not in(select min(UserID) from tbl_user group by PhoneNum having count(PhoneNum)>1)) as tmpresult);
-
-SET SQL_SAFE_UPDATES = 0;
