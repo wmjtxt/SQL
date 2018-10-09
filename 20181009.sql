@@ -60,6 +60,10 @@ create table tbl_relation
 );
 
 select * from tbl_relation;
+select distinct UserID,OppositeID from tbl_relation;
+#!!!!以下查询结果可以作为图的edges 
+select UserID,OppositeID,count(OppositeID) as wight from tbl_relation group by UserID,OppositeID;
+
 
 #insert into tbl_relation(UserID,OppositeID,TalkTime,CallType,CallSign)
 #select PhoneNumber,OppositePhoneNumber,TalkTime,CallType,CallSign from tbl_data;
@@ -72,6 +76,7 @@ select PhoneNumber,OppositePhoneNumber,TalkTime,CallType,CallSign from tbl_data;
 insert into tbl_relation(UserID,OppositeID,TalkTime,CallType,CallSign)
 select (select UserID from tbl_user where PhoneNumber = tbl_user.PhoneNum) as UserID,(select UserID from tbl_user where OppositePhoneNumber = tbl_user.PhoneNum) as OppositeID,TalkTime,CallType,CallSign from tbl_data;
 
+
 select distinct UserID from tbl_user inner join tbl_data on tbl_user.PhoneNum = tbl_data.OppositePhoneNumber;
 
 select UserID from tbl_user where tbl_user.PhoneNum in (select PhoneNumber from (select PhoneNumber,OppositePhoneNumber,TalkTime,CallType,CallSign from tbl_data));
@@ -81,6 +86,9 @@ select UserID from tbl_user where tbl_user.PhoneNum in (select PhoneNumber from 
 select PhoneNumber,OppositePhoneNumber from tbl_data;
 
 select distinct PhoneNumber,OppositePhoneNumber from tbl_data;
+
+select PhoneNumber,OppositePhoneNumber,count(OppositePhoneNumber) as number_of_call 
+from tbl_data;
 
 drop table if exists tbl_relation2;
 create table tbl_relation2 as 
@@ -92,6 +100,7 @@ select * from tbl_relation2;
 
 
 #tbl_user去重
+
 delete from tbl_user where UserID in (select UserID from (select UserID from tbl_user where PhoneNum in (SELECT PhoneNum FROM tbl_user group by PhoneNum having count(PhoneNum)>1) and UserID not in(select min(UserID) from tbl_user group by PhoneNum having count(PhoneNum)>1)) as tmpresult);
 
 SET SQL_SAFE_UPDATES = 0;
