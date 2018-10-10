@@ -7,7 +7,7 @@ select * from sys.sys_config;
 #Solution:
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root123';
 drop database case1;
-select count(*) from case1.tbl_data;
+select count(*) from case2.tbl_data;
 select * from case1.tbl_data;
 select * from sys.sys_config;
 
@@ -42,8 +42,15 @@ from tbl_data;
 
 
 #4.tbl_user去重
-delete from tbl_user where UserID in (select UserID from (select UserID from tbl_user where PhoneNum in (SELECT PhoneNum FROM tbl_user group by PhoneNum having count(PhoneNum)>1) and UserID not in(select min(UserID) from tbl_user group by PhoneNum having count(PhoneNum)>1)) as tmpresult);
 SET SQL_SAFE_UPDATES = 0;
+delete from tbl_user where UserID in (select UserID from (select UserID from tbl_user where PhoneNum in (SELECT PhoneNum FROM tbl_user group by PhoneNum having count(PhoneNum)>1) and UserID not in(select min(UserID) from tbl_user group by PhoneNum having count(PhoneNum)>1)) as tmpresult);
+#as tmpresult表示建立临时表
+SET SQL_SAFE_UPDATES = 1;
+#
+#SQL_SAFE_UPDATES值为1时，以下三种情况无法正常操作，会出现ERROR 1175 (HY000): You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column，设为0后可以执行
+#1:没有加where条件的全表更新操作 ;
+#2:加了where条件字段，但是where 字段 没有走索引的表更新 ;
+#3:全表delete 没有加where条件或者where 条件没有走索引。
 
 
 #5.以下查询结果可以作为图的edges
